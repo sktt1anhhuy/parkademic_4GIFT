@@ -1,0 +1,8 @@
+path: /media/huy2289/DAB4F5E6B4F5C553/SmartParking_energy/smartParkingwithANPR_website/data
+train: images/train
+val: images/test
+test: images/test
+
+# Classes
+names:
+  0: car plate
