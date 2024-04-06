@@ -14,7 +14,8 @@ git clone https://github.com/sktt1anhhuy/smartParkingwithANPR_website.git
 pip install -r requirements.txt
 ```
 7. Download Model Checkpoint [here]([https://dutudn-my.sharepoint.com/:u:/g/personal/123200007_sv1_dut_udn_vn/EaFINrIe3jZJuzKToZtfZ04BDUHEoM2bP6lR6ZmVBjgoJQ?e=TZDTZH](https://dutudn-my.sharepoint.com/:f:/g/personal/123200007_sv1_dut_udn_vn/EqRxO9IOtqNDhDNiykzNUhEBkmrXMKnbuBQDvcMTyus3Uw?e=idkbmf))
-7. Run the web app, type at terminal
+  
+8. Run the web app, type at terminal
 ```python
 cd smartParkingwithANPR_website
 streamlit run [your directory to]/app.py # for example E:/smartParkingwithANPR_website
