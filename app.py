@@ -2,30 +2,32 @@ import streamlit as st
 import cv2
 import numpy as np
 import tempfile
-import time
 from PIL import Image
 from ultralytics import YOLO
-from paddleocr import PaddleOCR, draw_ocr
+from paddleocr import PaddleOCR
 import pandas as pd
-import plotly.express as px
 import openpyxl
 from datetime import datetime
 import json
-import requests
 from streamlit_lottie import st_lottie
+import time
 
-# Create and Load data
 
 parking_data = 'parking_data.xlsx'
 current_parking_status = 'current_parking_status'
 history = 'history'
+car_plate_data = 'car_plate_data'
 
 df1 = pd.DataFrame(columns=['Id', 'Current Plate number'])
 df2 = pd.DataFrame(columns=['Id', 'Plate Number', 'Time get in', 'Time get out', 'Parking duration'])
+df3 = pd.DataFrame(columns=['Id', 'Saved Plate Number'])
 
 with pd.ExcelWriter(parking_data) as writer:
     df1.to_excel(writer, sheet_name=current_parking_status, index=False)
     df2.to_excel(writer, sheet_name=history, index=False)
+    df3.to_excel(writer, sheet_name=car_plate_data, index=False)
+
+car_plate_database = ['30A-688.88']
 
 workbook = openpyxl.load_workbook(parking_data)
 
@@ -126,7 +128,6 @@ if app_mode == 'About App':
         key=None,
     )
 
-    # st.video()
     st.markdown('''
     # About Us \n
       We are **Le Viet Anh Huy**, **Nguyen Chanh Minh Ngoc**, **Tran Di Kha**, and **Do Trong Khang** from **DUT**. \n
@@ -155,26 +156,29 @@ elif app_mode == 'Run on Image':
         unsafe_allow_html=True,
     )
 
-    kpi1, kpi2 = st.columns(2)
+    kpi1, kpi2, kpi3 = st.columns(3)
     # f"<h1 style='text-align: center; color: red;'>{int(fps)}</h1>",
     #                                     unsafe_allow_html=True
     with kpi1:
-        st.markdown(f"<h3 style='text-align: center;'>{'Detected Motorbike Plates'}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>{'Detected Car Plates'}</h3>", unsafe_allow_html=True)
         kpi1_text = st.markdown("0")
 
     with kpi2:
-        st.markdown(f"<h3 style='text-align: center;'>{'Motorbike Plate Number'}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>{'Car Plate Number'}</h3>", unsafe_allow_html=True)
         kpi2_text = st.markdown("0")
 
-    max_plates = st.sidebar.number_input('Maximum Number of Motorbike Plate', value=2, min_value=1)
+    with kpi3:
+        st.markdown(f"<h3 style='text-align: center;'>{'Check If Car Plate Exist?'}</h3>", unsafe_allow_html=True)
+        kpi3_text = st.markdown("0")
+
+    max_plates = st.sidebar.number_input('Maximum Number of Car Plate', value=2, min_value=1)
     st.sidebar.markdown('---')
-    detection_confidence = st.sidebar.slider('min Detection Confidence', min_value=0.0, max_value=1.0, value=0.5)
+    detection_confidence = st.sidebar.slider('Min Detection Confidence', min_value=0.0, max_value=1.0, value=0.5)
     st.sidebar.markdown('---')
 
-    img_file_buffer = st.sidebar.file_uploader("upload an Image", type=['jpg', 'png', 'jpeg'])
+    img_file_buffer = st.sidebar.file_uploader("Upload an Image", type=['jpg', 'png', 'jpeg'])
     if img_file_buffer is not None:
         image = np.array(Image.open(img_file_buffer))
-
     else:
         demo_image = DEMO_IMAGE
         image = np.array(Image.open(demo_image))
@@ -215,11 +219,15 @@ elif app_mode == 'Run on Image':
             kpi1_text.write(f"<h2 style='text-align: center; color: red;'>{plate_count}</h2>", unsafe_allow_html=True)
             kpi2_text.write(f"<h2 style='text-align: center; color: red;'>{plate_number}</h2>", unsafe_allow_html=True)
 
+            if plate_number.strip() in car_plate_database:
+                kpi3_text.write(f"<h2 style='text-align: center; color: red;'>{'Yes'}</h2>", unsafe_allow_html=True)
+            else:
+                kpi3_text.write(f"<h2 style='text-align: center; color: red;'>{'No'}</h2>", unsafe_allow_html=True)
+
         current_parking_sheet = workbook[current_parking_status]
-        # current_parking_sheet.cell(row=3, column=2, value=plate_number)
-        #
         current_parking_sheet['B' + str(plate_count + 1)] = plate_number
         workbook.save(parking_data)
+
     out_pd = pd.read_excel(parking_data,
                            sheet_name=current_parking_status,
                            usecols='B')
@@ -285,10 +293,10 @@ elif app_mode == 'Run on Video':
     st.subheader('Output Video')
     # kpi1_text = st.markdown("0")
 
-    max_plates = st.sidebar.number_input('Maximum Number of Motorbike Plate', value=2, min_value=1)
+    max_plates = st.sidebar.number_input('Maximum Number of Car Plate', value=2, min_value=1)
     st.sidebar.markdown('---')
-    detection_confidence = st.sidebar.slider('min Detection Confidence', min_value=0.0, max_value=1.0, value=0.5)
-    tracking_confidence = st.sidebar.slider('min Tracking Confidence', min_value=0.0, max_value=1.0, value=0.5)
+    detection_confidence = st.sidebar.slider('Min Detection Confidence', min_value=0.0, max_value=1.0, value=0.5)
+    tracking_confidence = st.sidebar.slider('Min Tracking Confidence', min_value=0.0, max_value=1.0, value=0.5)
     st.sidebar.markdown('---')
 
     stframe = st.empty()
@@ -341,7 +349,7 @@ elif app_mode == 'Run on Video':
         kpi1_text = st.markdown("0")
 
     with kpi2:
-        st.markdown(f"<h5 style='text-align: center;'>{'Detected Motorbike Plates'}</h5>", unsafe_allow_html=True)
+        st.markdown(f"<h5 style='text-align: center;'>{'Detected Car Plates'}</h5>", unsafe_allow_html=True)
         kpi2_text = st.markdown("0")
 
     with kpi3:
@@ -366,6 +374,11 @@ elif app_mode == 'Run on Video':
     plate_count = 0
     plates = []
     plates1 = []
+
+    car_plate_data_sheet = workbook[car_plate_data]
+    car_plate_data_sheet['A2'] = '1'
+    car_plate_data_sheet['B2'] = '30A-688.88'
+
     while vid.isOpened(): # or vid1.isOpened():
         i += 1
         i1 += 1
@@ -401,7 +414,7 @@ elif app_mode == 'Run on Video':
                 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 print(result)
                 plate_number = ''
-                if result[0] == []:
+                if result[0] is []:
                     plate_number = "Error"
                 else:
                     for i in range(len(result[0])):
@@ -409,7 +422,10 @@ elif app_mode == 'Run on Video':
 
                 current_parking_sheet = workbook[current_parking_status]
                 history_sheet = workbook[history]
+                # car_plate_data_sheet = workbook[car_plate_data]
                 # current_parking_sheet.cell(row=3, column=2, value=plate_number)
+                if plate_number in car_plate_database:
+                    print('Great')
                 if plate_number in plates:
                     print('Plate Number Exist')
                     plate_count -= 1
